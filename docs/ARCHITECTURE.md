@@ -23,17 +23,19 @@ AION/ (Python, authoritative — owned by its own lane)
 │       └── schema.py         #   event payload schemas (versioned)
 
 AION-Gym/ (this repo — the Godot client)
-├── project.godot
-├── scenes/                   # gym (dashboard), habitat, mind_viewer,
+├── project.godot             # portrait-first, mobile + desktop
+├── export_presets.cfg        # Android arm64 APK preset ("AION Gym")
+├── scenes/                   # gym (root), habitat, mind_viewer,
 │                             # training_world, memory_archive, control_room
 ├── scripts/
-│   ├── core/                 # event_bus, state_cache, connection_manager
+│   ├── core/                 # event_bus, state_cache, connection_manager,
+│   │                         #   app_shell (pages/back), gym_tabs (tab bar)
 │   ├── aion_client/          # ws_client, http_client, schema (THE CONTRACT)
 │   ├── visualization/        # connection_graph, learning_curves
-│   └── gym.gd                # dashboard + lens switching
-├── assets/                   # concept art
-├── docs/                     # this file
-└── tests/                    # headless GDScript test runner
+│   └── gym.gd                # dashboard + shell pages + reflow
+├── assets/                   # concept art (both owner concepts)
+├── docs/                     # this file + FORK_NOTES.md (provenance)
+└── tests/                    # gate suite + GYM-C integration driver
 ```
 
 The only new Python code is `aion/gym_bridge/` — an observation-and-request
@@ -73,20 +75,48 @@ Autoloads (declared in `project.godot`, in this order):
 standalone (tests inject dependencies via `attach()` / `attach_bus()`), so the
 headless test runner never depends on autoload registration.
 
+## 2b. App shell & navigation (mobile + desktop)
+
+`scripts/core/app_shell.gd` (`AppShell`) hosts full-screen pages with slide
+transitions, safe-area placement and back navigation (Android back button,
+Escape); `scripts/core/gym_tabs.gd` (`GymTabBar`) is the bottom tab bar.
+Pages: the dashboard (home) plus the five surfaces — habitat, mind viewer,
+training world, memory archive, control room. Keyboard shortcuts `0–5` remain
+for desktop. The dashboard reflows stacked when the viewport is portrait and
+side-by-side when landscape, re-filling every widget from the `StateCache`
+so a reflow never blanks the display.
+
+Fork provenance for these components: `docs/FORK_NOTES.md`.
+
 ## 3. Transport
 
 - **WebSocket** — push event stream, Godot subscribes.
 - **HTTP** — request/response for snapshots and permitted actions.
 
 Client-side defaults (the bridge lane may pin different values; override via
-`ConnectionManager.connect_to_runtime(host, port)` and `http_client.base_url`):
+`ConnectionManager.connect_to_runtime(host, port)` and the manager's
+`http_port`):
 
 | Setting | Default |
 |---|---|
 | WS URL | `ws://127.0.0.1:7480` (`wss://` when `use_tls`) |
-| HTTP base | `http://127.0.0.1:7480` |
+| HTTP base | `http://127.0.0.1:7481` (the bridge serves its request API beside the stream; pinned by the manager on connect) |
 | Snapshot | `GET api/snapshot` |
-| Actions | `POST api/actions/<action>` |
+| Actions | `POST api/actions/<action>` with `X-AION-Token` when a token is set |
+
+**Authentication:** actions are authorised by the bridge. The client sends
+the token on action requests only — `X-AION-Token` header over HTTP,
+`token` field on ws `action.request` control messages (`ConnectionManager.set_token`).
+Snapshot reads stay open on the localhost bind per the bridge's auth law.
+Every request is validated by the runtime's authority layer; denials return
+`reason` + `state_unchanged` and are displayed, never hidden.
+
+**Ws control path (not schema events):** `action.request` out;
+`action.result` / `action.error` replies arrive on `ws_client.action_result`
+before the schema contract sees the frame — control replies have no event
+envelope. Snapshot-over-HTTP is wrapped in a locally-constructed
+`state.snapshot` envelope (explicitly marked, real data only) so the whole
+pipeline — cache, graph, dashboard — has exactly one path.
 
 Reconnect policy: capped exponential backoff — 0.5s, doubling per attempt,
 capped at 30s; unlimited attempts by default (`reconnect_attempts` to limit).
@@ -149,13 +179,6 @@ single source of truth in this repo.
   in `strict_payload` mode. A well-formed envelope is **never dropped**
   (display integrity).
 - Unknown types parse OK with `is_raw: true` and route on `EventBus.raw_event`.
-
-### Snapshot over HTTP
-
-`GET api/snapshot` returns the state document (the `state.snapshot` payload).
-The client wraps it in a locally-constructed `state.snapshot` envelope
-(explicitly marked, real data only) so the whole pipeline — cache, graph,
-dashboard — has exactly one path.
 
 ## 5. Request API (permitted actions only)
 

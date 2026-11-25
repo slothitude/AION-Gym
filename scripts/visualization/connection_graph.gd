@@ -26,12 +26,13 @@ func _ready() -> void:
 
 
 ## Explicit bus wiring (used by the autoload layout and by tests).
+## Idempotent: safe to call before _ready and again from _ready.
 func attach(bus: Node) -> void:
 	if bus == null:
 		return
-	if bus.has_signal("connection_updated"):
+	if bus.has_signal("connection_updated") and not bus.connection_updated.is_connected(apply_connection_update):
 		bus.connection_updated.connect(apply_connection_update)
-	if bus.has_signal("state_snapshot"):
+	if bus.has_signal("state_snapshot") and not bus.state_snapshot.is_connected(apply_snapshot):
 		bus.state_snapshot.connect(apply_snapshot)
 
 

@@ -19,6 +19,9 @@ const HttpClientScript = preload("res://scripts/aion_client/http_client.gd")
 const ConnectionManagerScript = preload("res://scripts/core/connection_manager.gd")
 const ConnectionGraphScript = preload("res://scripts/visualization/connection_graph.gd")
 const LearningCurvesScript = preload("res://scripts/visualization/learning_curves.gd")
+const AppShellScript = preload("res://scripts/core/app_shell.gd")
+const GymTabsScript = preload("res://scripts/core/gym_tabs.gd")
+const GymScript = preload("res://scripts/gym.gd")
 
 var _passes: int = 0
 var _failures: Array = []
@@ -33,6 +36,7 @@ func _initialize() -> void:
 	_run_http_tests()
 	_run_connection_manager_tests()
 	_run_visualization_tests()
+	_run_shell_tests()
 	print("---")
 	print("passed: %d   failed: %d" % [_passes, _failures.size()])
 	for f in _failures:
@@ -436,3 +440,41 @@ func _run_visualization_tests() -> void:
 	bus.free()
 	graph.free()
 	curves.free()
+
+
+func _run_shell_tests() -> void:
+	print("[app shell]")
+	var shell := AppShellScript.new()
+	var seen: Array = []
+	shell.page_changed.connect(func(page_id): seen.append(page_id))
+	var home := Control.new()
+	var page_b := Control.new()
+	var page_c := Control.new()
+	shell.register_page(AppShellScript.HOME_PAGE, home)
+	shell.register_page("b", page_b)
+	shell.register_page("c", page_c)
+	check(shell.current_page_id() == AppShellScript.HOME_PAGE, "home page active after registration")
+	check(shell.has_page("b") and not shell.has_page("nope"), "has_page reflects registration")
+
+	check(shell.show_page("b"), "show_page navigates to a registered page")
+	check(shell.current_page_id() == "b", "current page updates on navigation")
+	check(seen.has("b"), "page_changed emitted with the page id")
+	check(not shell.visible_pages_overlap(), "exactly one page is visible")
+
+	check(shell.show_page("nope") == false, "unknown page rejected")
+	check(shell.current_page_id() == "b", "unknown page leaves state untouched")
+
+	check(shell.back() and shell.current_page_id() == AppShellScript.HOME_PAGE, "back returns home")
+	check(seen.count(AppShellScript.HOME_PAGE) >= 1, "page_changed emits on back")
+	check(not shell.back(), "back at home is a no-op")
+	shell.free()  # frees the registered pages with it
+
+	print("[navigation data]")
+	var tab_ids: Array = []
+	for t in GymTabsScript.TABS:
+		tab_ids.append(str(t[0]))
+	var expected: Array = [AppShellScript.HOME_PAGE]
+	for s in GymScript.SURFACE_ORDER:
+		expected.append(str(s))
+	check(tab_ids == expected, "tab ids match dashboard + surface order")
+	check(GymScript.SURFACES.has("mind_viewer"), "mind viewer surface exists (code-built page)")

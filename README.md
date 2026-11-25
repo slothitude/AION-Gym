@@ -23,6 +23,13 @@ scientific instrumentation around it. It is the public-facing way people
 raise, observe and interact with their own AION, decoupled from any one
 Python runtime or substrate.
 
+**Independent app, fork-derived.** The repo was forked from the Ant's Godot
+project as a *starting codebase only*; every reused foundation (portrait
+shell, page navigation, tab bar, Android export) was renamed, adapted and
+tested as an AION Gym component. It carries no Ant's colony, console,
+soul management or branding, and has no dependency on any Ant's runtime —
+see `docs/FORK_NOTES.md` for the full provenance and component mapping.
+
 ## Locked choices
 
 | Choice | Decision |

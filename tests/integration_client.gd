@@ -20,8 +20,7 @@ const ConnectionGraphScript = preload("res://scripts/visualization/connection_gr
 const LearningCurvesScript = preload("res://scripts/visualization/learning_curves.gd")
 
 const GYM_ASK_Q := "who operates Tav?"
-const GYM_LESSON := ("Kav operates Tav. Tav routes to relay Kimo. Kimo controls "
-	"device Zor. Zor produces heat.")
+const GYM_LESSON: String = "Kav operates Tav. Tav routes to relay Kimo. Kimo controls device Zor. Zor produces heat."
 
 var bus: Node
 var cache: Node
@@ -32,7 +31,7 @@ var curves: Node
 
 var received: Array = []       # every parsed schema event, in arrival order
 var control: Array = []        # every action.result / action.error message
-var last_snapshot: Dictionary = {}
+var snap_box := [{}]           # newest state.snapshot payload (reference-shared)
 var _token := ""
 
 
@@ -70,7 +69,7 @@ func _build() -> void:
 	mgr.event_received.connect(func(ev: Dictionary) -> void:
 		received.append(ev))
 	bus.state_snapshot.connect(func(payload: Dictionary) -> void:
-		last_snapshot = payload)
+		snap_box[0] = payload)
 	mgr.connection_state_changed.connect(func(s: int, d: String) -> void:
 		print("[driver] connection state %d: %s" % [s, d]))
 
@@ -107,7 +106,7 @@ func _run() -> void:
 		var ask: Dictionary = await _send_action("ask", {"question": GYM_ASK_Q})
 		report["actions"].append(_action_row("ask", ask))
 		var ask_res: Dictionary = _result_of(ask)
-		print("[driver] ask verdict=%s student=%r" % [str(ask_res.get("verdict")),
+		print("[driver] ask verdict=%s student=%s" % [str(ask_res.get("verdict")),
 			str(ask_res.get("student_answer"))])
 		ok = ok and _ok(ask) and str(ask_res.get("verdict")) == "confirmed"
 
@@ -164,7 +163,9 @@ func _run() -> void:
 		mgr.request_snapshot()
 		await _sleep(1.0)
 		report["dashboard"] = _dashboard_values()
-		report["final_snapshot"] = last_snapshot
+		report["final_snapshot"] = snap_box[0]
+		report["conn_state"] = mgr.get_state()
+		report["gym_conn_text"] = gym._conn_text
 		report["journey"] = gym._journey_label.text if gym._journey_label != null else ""
 		report["graph_edges"] = graph.edge_count()
 		report["graph_nodes"] = graph.node_count()
