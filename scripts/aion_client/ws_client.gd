@@ -14,8 +14,12 @@ signal disconnected(code: int, reason: String, was_error: bool)
 signal event_received(event: Dictionary)
 signal parse_error(error_message: String, raw_text: String)
 signal transport_error(message: String)
+signal action_result(message: Dictionary)
 
 const Schema = preload("res://scripts/aion_client/schema.gd")
+
+## Bridge control replies (not schema events — they have no event envelope).
+const CONTROL_TYPES: Array = ["action.result", "action.error"]
 
 var url: String = ""
 
@@ -69,9 +73,30 @@ func _process(_delta: float) -> void:
 
 
 ## Contract parse of one text frame. Kept separate so it is testable offline.
+## Bridge control replies (action.result / action.error) are routed to
+## action_result before the schema contract — they are not schema events.
 func _handle_text(text: String) -> void:
+	var probe: Variant = JSON.parse_string(text)
+	if probe is Dictionary and CONTROL_TYPES.has(str(probe.get("type", ""))):
+		action_result.emit(probe)
+		return
 	var result: Dictionary = Schema.parse(text)
 	if not bool(result.get("ok", false)):
 		parse_error.emit(str(result.get("error", "unknown parse failure")), text)
 		return
 	event_received.emit(result.get("event", {}))
+
+
+## Send one permitted-action request over the event stream (the bridge's
+## ws action path). Returns OK once handed to the peer; the structured
+## action.result / action.error reply arrives via action_result.
+func send_action_request(action: String, args: Dictionary = {},
+		request_id: String = "", auth_token: String = "") -> Error:
+	if _peer.get_ready_state() != WebSocketPeer.STATE_OPEN:
+		return ERR_CONNECTION_ERROR
+	var msg: Dictionary = {"type": "action.request", "action": action, "args": args}
+	if request_id != "":
+		msg["request_id"] = request_id
+	if auth_token != "":
+		msg["token"] = auth_token
+	return _peer.send_text(JSON.stringify(msg))

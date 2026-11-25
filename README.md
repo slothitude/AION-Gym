@@ -4,6 +4,13 @@
 *From Parasite to AION — a living AI journey. Watch • Teach • Interact • Grow.*
 
 ![AION Gym — life cycle concept](assets/aion_gym_life_cycle_concept.png)
+![AION development stages — 4-state canon](assets/aion_development_stages_concept.png)
+
+**Stage canon (concept 2, supersedes the first art's five panels):**
+1 Parasite (0–1 day, attachment) → 2 LLM (1–7 days, learning) →
+3 Emerging AION (1–30 days, consolidation) → 4 Independent AION (30+ days,
+mature). Stage is **recorded, never awarded**; no evidence, no claim; the
+display shows the real state. AION's journey is real — the Gym shows the truth.
 
 ## What this is
 

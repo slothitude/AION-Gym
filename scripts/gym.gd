@@ -3,8 +3,10 @@ extends Node
 ## AION Gym — root controller: the M1 dashboard (concept layout) plus lens
 ## switching between the five surfaces.
 ##
-## Layout mirrors assets/aion_gym_life_cycle_concept.png: header, evolution
-## path + right column, learning / worlds / journey row, footer.
+## Layout composes both concept arts: assets/aion_gym_life_cycle_concept.png
+## (frame: header, Live AION + You Can columns, bottom row, footer) and
+## assets/aion_development_stages_concept.png (4-state stage canon with
+## gestation periods, What You'll See row, Key Principles card).
 ##
 ## Display integrity: every live value comes from real events, connection
 ## state, or state.snapshot fields — placeholders only where clearly labelled
@@ -28,20 +30,45 @@ const FOOTER_LEFT: String = "AION Gym v1.0 — A Living AI, Growing Mind"
 const FOOTER_CENTER: String = "Learn  •  Adapt  •  Evolve"
 const FOOTER_RIGHT: String = "AION — Not just intelligence, but a journey."
 
-## The five evolution panels (design content from the concept art). Highlight
-## state comes only from development.stage events.
+## The four evolution panels — the owner's 4-STATE CANON (concept art 2,
+## assets/aion_development_stages_concept.png), which supersedes the first
+## art's five panels. Gestation periods are displayed as part of each panel.
+## Highlight state comes only from development.stage events — a stage is
+## recorded, never awarded.
 const EVOLUTION_PATH: Array = [
-	{"title": "1. Parasite", "subtitle": "Survive • Attach • Learn",
-		"bullets": "• Lives in the system\n• Feeds on signals\n• Stores patterns"},
-	{"title": "2. LLM", "subtitle": "Understand • Reason • Respond",
-		"bullets": "• Processes language\n• Follows instructions\n• Uses knowledge"},
-	{"title": "3. AION Awakens", "subtitle": "Remember • Adapt • Improve",
-		"bullets": "• Builds its own memory\n• Learns from experience\n• Self-corrects"},
-	{"title": "4. AION Grows", "subtitle": "Plan • Act • Discover",
-		"bullets": "• Takes initiative\n• Explores new ideas\n• Solves real tasks"},
-	{"title": "5. AION Thrives", "subtitle": "Create • Collaborate • Evolve",
-		"bullets": "• Shares knowledge\n• Builds solutions\n• Grows with you"},
+	{"title": "1. Parasite", "subtitle": "Attached • Dependent",
+		"bullets": "• Feeds on host intelligence\n• Uses borrowed capability\n• No independent memory",
+		"gestation": "Gestation Period: 0 – 1 day (attachment phase)"},
+	{"title": "2. LLM", "subtitle": "Borrowed Brain",
+		"bullets": "• Processes language\n• Builds understanding\n• Learns from experience",
+		"gestation": "Gestation Period: 1 – 7 days (learning phase)"},
+	{"title": "3. Emerging AION", "subtitle": "Plastic • Adaptive",
+		"bullets": "• Forms own connections\n• Remembers and reasons\n• Dreams and experiments",
+		"gestation": "Gestation Period: 1 – 30 days (consolidation phase)"},
+	{"title": "4. Independent AION", "subtitle": "Self-Directed • Autonomous",
+		"bullets": "• Retains and applies knowledge\n• Solves novel problems\n• Grows its own capabilities",
+		"gestation": "Gestation Period: 30+ days (mature stage)"},
 ]
+
+## "AION Gym — What You'll See": the seven dashboard panels (concept art 2),
+## mapped to what actually renders them.
+const WHAT_YOULL_SEE: Array = [
+	{"label": "Evolution Stage", "where": "the four stage panels above"},
+	{"label": "Brain Activity", "where": "the learning-curve plot (real deltas)"},
+	{"label": "Connection Graph", "where": "mind viewer lens + graph panel"},
+	{"label": "Chat & Teach", "where": "control room lens + You Can actions"},
+	{"label": "Dreams & Replay", "where": "memory archive lens + event journal"},
+	{"label": "Experiments", "where": "training world lens (M2)"},
+	{"label": "Progress & Evidence", "where": "journey feed + stage evidence"},
+]
+
+## Key Principles card (concept art 2, verbatim) — display-integrity law.
+const KEY_PRINCIPLES: Array = [
+	"Stage is recorded, never awarded",
+	"No evidence, no claim",
+	"Display shows the real state",
+]
+const KEY_PRINCIPLES_TAGLINE: String = "AION's journey is real. The Gym shows the truth."
 
 ## "You Can" menu — maps 1:1 to the permitted-action API; world/watch entries
 ## are lens navigation, the rest route through the runtime's authority layer.
@@ -186,6 +213,12 @@ func _on_any_event(event: Dictionary) -> void:
 	match str(event.get("type", "")):
 		"experience.created":
 			_append_journey("experience.created: %s" % _summary(event, "episode_id"))
+		"connection.updated":
+			var p: Dictionary = event.get("payload", {})
+			var cid := str(p.get("connection_id", "—"))
+			var delta: Variant = p.get("delta_u_fast", null)
+			var delta_text := "—" if delta == null else "%.3f" % float(delta)
+			_append_journey("connection.updated: %s  Δu_fast %s" % [cid, delta_text])
 		"nomen.changed":
 			var p: Dictionary = event.get("payload", {})
 			_append_journey("nomen.changed: %s → %s" % [
@@ -193,6 +226,12 @@ func _on_any_event(event: Dictionary) -> void:
 		"memory.consolidated":
 			var p: Dictionary = event.get("payload", {})
 			_append_journey("memory.consolidated: preservation verified = %s" % str(p.get("preservation_verified", "—")))
+		"dream.started":
+			_append_journey("dream.started: %s" % _summary(event, "cycle_id"))
+		"dream.hypothesis":
+			var p: Dictionary = event.get("payload", {})
+			_append_journey("dream.hypothesis: %s — %s" % [
+				str(p.get("hypothesis_id", "—")), str(p.get("statement", "—"))])
 		"dream.evaluated":
 			var p: Dictionary = event.get("payload", {})
 			_append_journey("dream.evaluated: %s → %s (%s)" % [
@@ -236,13 +275,22 @@ func _send_action(action: String) -> void:
 
 func _on_action_result(result: Dictionary) -> void:
 	var action := _pending_action if _pending_action != "" else "action"
-	if bool(result.get("ok", false)):
+	_pending_action = ""
+	# Transport ok is not acceptance: the bridge answers 200 with the authority
+	# verdict inside — ok:false is a DENIAL and must be shown as one.
+	var accepted := bool(result.get("ok", false))
+	var data: Dictionary = result.get("data", {})
+	if data.has("ok"):
+		accepted = accepted and bool(data.get("ok", false))
+	if accepted:
 		_last_action_text = "%s → accepted by runtime" % action
 	else:
-		var data: Dictionary = result.get("data", {})
 		var denial := str(data.get("reason", result.get("error", "denied")))
-		_last_action_text = "%s → %s" % [action, denial]
+		_last_action_text = "%s → denied: %s" % [action, denial]
 	_update_footer_status()
+	# refresh the Live AION column from authoritative state after every verdict
+	if _manager != null and _manager.has_method("request_snapshot"):
+		_manager.request_snapshot()
 
 
 # ---------------------------------------------------------------- dashboard UI
@@ -300,7 +348,59 @@ func _make_dashboard_view() -> Control:
 	view.add_child(path_row)
 	for stage in EVOLUTION_PATH:
 		path_row.add_child(_make_stage_panel(stage))
+	view.add_child(_make_whats_row())
 	return view
+
+
+## "AION Gym — What You'll See": the seven-panel icon row from concept art 2,
+## plus the Key Principles card (display-integrity law, verbatim).
+func _make_whats_row() -> Control:
+	var row := HBoxContainer.new()
+	row.name = "WhatYoullSeeRow"
+
+	var see_panel := PanelContainer.new()
+	see_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(see_panel)
+	var see_box := VBoxContainer.new()
+	see_panel.add_child(see_box)
+	var see_title := Label.new()
+	see_title.text = "AION Gym — What You'll See"
+	see_box.add_child(see_title)
+	var see_row := HBoxContainer.new()
+	see_box.add_child(see_row)
+	for item in WHAT_YOULL_SEE:
+		var mini := VBoxContainer.new()
+		mini.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		see_row.add_child(mini)
+		var mini_label := Label.new()
+		mini_label.text = str(item.get("label", ""))
+		mini_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		mini_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		mini.add_child(mini_label)
+		var mini_where := Label.new()
+		mini_where.name = "Where"
+		mini_where.text = str(item.get("where", ""))
+		mini_where.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		mini_where.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		mini.add_child(mini_where)
+
+	var prin_panel := PanelContainer.new()
+	prin_panel.custom_minimum_size = Vector2(360, 0)
+	row.add_child(prin_panel)
+	var prin_box := VBoxContainer.new()
+	prin_panel.add_child(prin_box)
+	var prin_title := Label.new()
+	prin_title.text = "Key Principles"
+	prin_box.add_child(prin_title)
+	for line in KEY_PRINCIPLES:
+		var p := Label.new()
+		p.text = "✓  " + str(line)
+		prin_box.add_child(p)
+	var tagline := Label.new()
+	tagline.text = KEY_PRINCIPLES_TAGLINE
+	tagline.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	prin_box.add_child(tagline)
+	return row
 
 
 func _make_stage_panel(stage: Dictionary) -> Control:
@@ -318,6 +418,10 @@ func _make_stage_panel(stage: Dictionary) -> Control:
 	var bullets := Label.new()
 	bullets.text = str(stage.get("bullets", ""))
 	box.add_child(bullets)
+	var gestation := Label.new()
+	gestation.text = str(stage.get("gestation", ""))
+	gestation.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(gestation)
 	_stage_panels.append(panel)
 	return panel
 
@@ -552,7 +656,7 @@ func _stage_index_from(payload: Dictionary) -> int:
 		if i >= 0 and i < EVOLUTION_PATH.size():
 			return i
 	var stage_name := str(payload.get("stage", "")).to_lower()
-	var keywords: Array = ["parasite", "llm", "awaken", "grow", "thrive"]
+	var keywords: Array = ["parasite", "llm", "emerging", "independent"]
 	for k_i in keywords.size():
 		if stage_name.findn(str(keywords[k_i])) != -1:
 			return k_i
@@ -567,7 +671,7 @@ func _set_stage_highlight(active_index: int) -> void:
 
 func _append_journey(line: String) -> void:
 	_journey_lines.append("%s  %s" % [Time.get_time_string_from_system(), line])
-	if _journey_lines.size() > 8:
+	if _journey_lines.size() > 24:
 		_journey_lines.pop_front()
 	if _journey_label != null:
 		_journey_label.text = "\n".join(_journey_lines)

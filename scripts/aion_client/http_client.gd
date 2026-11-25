@@ -28,6 +28,10 @@ const ACTION_ENDPOINTS: Dictionary = {
 
 var base_url: String = "http://127.0.0.1:7480"
 var timeout_seconds: float = 10.0
+## Bridge auth token. Sent on ACTION posts as the X-AION-Token header when
+## non-empty. Reads (snapshot) stay open on the localhost bind per the bridge's
+## auth law, so the header rides action requests only.
+var token: String = ""
 
 
 func snapshot_url() -> String:
@@ -61,6 +65,8 @@ func _request(method: int, endpoint: String, body: Dictionary, action: String, c
 	http.timeout = timeout_seconds
 	add_child(http)
 	var headers: PackedStringArray = ["Content-Type: application/json"]
+	if method == HTTPClient.METHOD_POST and token != "":
+		headers.append("X-AION-Token: %s" % token)
 	var body_text := ""
 	if method == HTTPClient.METHOD_POST:
 		body_text = JSON.stringify(body)

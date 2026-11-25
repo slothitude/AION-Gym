@@ -13,6 +13,7 @@ signal event_received(event: Dictionary)
 
 const WsClientScript = preload("res://scripts/aion_client/ws_client.gd")
 const HttpClientScript = preload("res://scripts/aion_client/http_client.gd")
+const Schema = preload("res://scripts/aion_client/schema.gd")
 
 enum ConnState { OFFLINE, CONNECTING, CONNECTED, RETRY_WAITING }
 
@@ -20,6 +21,10 @@ enum ConnState { OFFLINE, CONNECTING, CONNECTED, RETRY_WAITING }
 ## different port — connect_to_runtime() overrides.
 const DEFAULT_HOST: String = "127.0.0.1"
 const DEFAULT_PORT: int = 7480
+## The bridge serves its HTTP request API on a second localhost port beside the
+## WebSocket stream (default ws :7480, http :7481). The http client keeps its
+## own bare default base URL; this manager pins the real one on connect.
+const DEFAULT_HTTP_PORT: int = 7481
 
 const BACKOFF_BASE_SECONDS: float = 0.5
 const BACKOFF_FACTOR: float = 2.0
@@ -27,6 +32,8 @@ const BACKOFF_MAX_SECONDS: float = 30.0
 
 var host: String = DEFAULT_HOST
 var port: int = DEFAULT_PORT
+var http_port: int = DEFAULT_HTTP_PORT
+var token: String = ""
 var use_tls: bool = false
 var auto_reconnect: bool = true
 var reconnect_attempts: int = 0  # 0 = unlimited
@@ -93,7 +100,24 @@ func disconnect_runtime() -> void:
 
 func request_snapshot(callback: Callable = Callable()) -> void:
 	_ensure_clients()
-	http_client.fetch_snapshot(callback)
+	if callback.is_valid():
+		http_client.fetch_snapshot(callback)
+		return
+	# No callback: the snapshot is pulled for the dashboard, so route the
+	# authoritative document onto the event bus (same parse contract as the ws
+	# stream — display values come from real runtime state, never inference).
+	http_client.fetch_snapshot(func(result: Dictionary) -> void:
+		if not bool(result.get("ok", false)):
+			return
+		var parsed: Dictionary = Schema.parse_object(result.get("data", {}))
+		if bool(parsed.get("ok", false)) and _bus != null:
+			_bus.publish(parsed.get("event", {})))
+
+
+func set_token(p_token: String) -> void:
+	token = p_token
+	if http_client != null:
+		http_client.token = token
 
 
 func send_action(action: String, body: Dictionary = {}, callback: Callable = Callable()) -> void:
@@ -124,6 +148,9 @@ func _ensure_clients() -> void:
 		http_client = HttpClientScript.new()
 		http_client.name = "HttpClient"
 		add_child(http_client)
+	# pin the live endpoints: the request API lives beside the event stream
+	http_client.base_url = "%s://%s:%d" % ["https" if use_tls else "http", host, http_port]
+	http_client.token = token
 
 
 func _on_ws_connected() -> void:

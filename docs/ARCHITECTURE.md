@@ -188,16 +188,56 @@ refused locally by `http_client` before any network traffic.
 6. **Event history & replay** — every event is journaled (`StateCache`,
    capped at 1000 entries); replay arrives in the vertical slice.
 
-## 7. Dashboard (concept layout)
+## 7. Dashboard (two concepts, composed)
 
-`scenes/gym.tscn` mirrors `assets/aion_gym_life_cycle_concept.png`:
+The dashboard composes both owner concept arts:
+
+- **Concept 1** (`assets/aion_gym_life_cycle_concept.png`) — the layout frame:
+  header, right-hand Live AION column, You Can action column, learning /
+  worlds / journey bottom row, footer.
+- **Concept 2** (`assets/aion_development_stages_concept.png`) — the stage
+  presentation: the owner's **4-STATE CANON** with gestation periods, the
+  "What You'll See" panel row, and the Key Principles card. This supersedes
+  concept 1's five-panel evolution path.
+
+### Stage presentation (4-state canon — recorded, never awarded)
+
+| # | Stage | Trait | Gestation period | Phase |
+|---|---|---|---|---|
+| 1 | Parasite | Attached • Dependent | 0 – 1 day | attachment phase |
+| 2 | LLM | Borrowed Brain | 1 – 7 days | learning phase |
+| 3 | Emerging AION | Plastic • Adaptive | 1 – 30 days | consolidation phase |
+| 4 | Independent AION | Self-Directed • Autonomous | 30+ days | mature stage |
+
+Gestation periods are displayed as part of each stage panel. The active stage
+is highlighted only by real `development.stage` events (via `stage_index` or
+stage-name keywords); with no events, nothing is highlighted. A stage is
+**recorded, never awarded** — the client never promotes AION on its own.
+
+### "What You'll See" — the seven panels and what renders them
+
+| Panel | Rendered by |
+|---|---|
+| Evolution Stage | the four stage panels (this dashboard) |
+| Brain Activity | `learning_curves.gd` — real `|Δu_fast|` activity; exam-derived curves arrive when the bridge defines exam events |
+| Connection Graph | `connection_graph.gd` — mind viewer lens; real `connection.updated` edges |
+| Chat & Teach | control room lens + You Can actions (permitted-action API) |
+| Dreams & Replay | memory archive lens + the `StateCache` journal (replay) |
+| Experiments | training world lens (M2) |
+| Progress & Evidence | journey feed (real nomen/dream/hostmode events) + stage evidence |
+
+### Key Principles (display-integrity law, verbatim from the concept)
+
+- Stage is recorded, never awarded
+- No evidence, no claim
+- Display shows the real state
+
+> *AION's journey is real. The Gym shows the truth.*
+
+### Layout frame (concept 1)
 
 - **Header** — "AION GYM — Watch • Teach • Interact • Grow — From Parasite to
   AION, a living AI journey"
-- **Evolution path** — five panels: Parasite → LLM → AION Awakens → AION
-  Grows → AION Thrives. The active panel is highlighted only by real
-  `development.stage` events (via `stage_index` or stage-name keywords); with
-  no events, nothing is highlighted.
 - **Live AION column** — Online (connection state), Mode, Plasticity, Memory,
   Experience, Uptime — all from `state.snapshot`; `—` until real values
   arrive.
@@ -205,12 +245,8 @@ refused locally by `http_client` before any network traffic.
   Explore a World / Watch & Learn — 1:1 with the permitted-action API; the
   action trio routes through the runtime's authority layer and surfaces
   verdicts verbatim.
-- **Learning in Real Time** — plots real `|Δu_fast|` activity from
-  `connection.updated`; exam-derived curves (Recognition / Prediction /
-  Combination / Self-Correction) arrive when the bridge defines exam events.
-- **Explore Worlds** — training-world lens entry (M2 plugs in world
-  batteries).
-- **Watch the Journey** — feed of real nomen/devhistory/dream/hostmode events.
+- **Learning in Real Time** · **Explore Worlds** · **Watch the Journey** — as
+  mapped above.
 - **Footer** — "AION Gym v1.0 — A Living AI, Growing Mind" · Learn • Adapt •
   Evolve · "AION — Not just intelligence, but a journey." + connect button
   and status line.
