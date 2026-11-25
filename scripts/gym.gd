@@ -386,8 +386,14 @@ func _refresh_from_cache() -> void:
 	if _journey_label != null and not _journey_lines.is_empty():
 		_journey_label.text = "\n".join(_journey_lines)
 	if _online_label != null:
-		_online_label.text = "○ " + _conn_text
-		_online_label.modulate = Color(0.7, 0.7, 0.7)
+		# re-render the ACTUAL connection state (a reflow can rebuild the live
+		# column after the runtime already connected — never show stale offline)
+		var mgr := get_node_or_null("/root/ConnectionManager")
+		if mgr != null and mgr.has_method("get_state"):
+			_set_connection_text(int(mgr.get_state()))
+		else:
+			_online_label.text = "○ " + _conn_text
+			_online_label.modulate = Color(0.7, 0.7, 0.7)
 	_update_footer_status()
 
 

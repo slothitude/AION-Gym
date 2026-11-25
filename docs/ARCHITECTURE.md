@@ -288,6 +288,52 @@ and local refusal of non-permitted actions; connection-manager backoff
 progression, retry scheduling, give-up, manual-disconnect and
 auto_reconnect=false paths (offline mock — no sockets); visualization stores.
 
+## 8b. The 3D organism view — honest-visualization mapping (owner canon)
+
+Binding mapping for the Gym's 3D organism rendering (the owner sketches the
+prototype scene + mapping script next; this section is the law it builds to):
+
+| Visual | Maps to |
+|---|---|
+| node | Node3D instance (MultiMesh for bulk) |
+| position | layout projection |
+| size | scale from strength (\|u_fast\| or consolidated magnitude) |
+| orientation | look_at toward the strongest connection |
+| connection | line / thin cylinder, width + opacity from weight |
+| color | provenance (PLASTIC / CONSOLIDATED / RETRIEVED) |
+| change over time | Tween from old to new transform, only on real state deltas from the event stream |
+
+**Three honesty rules (binding):**
+
+1. **Position is a layout, not a measurement.** Distance between nodes does
+   not mean similarity unless computed that way — and viewers will read it
+   as if it does. Label the layout method on screen (e.g. "PCA of weight
+   vectors, seed 0") or use a fixed arbitrary layout and say so. Every run
+   records which it used, so replays don't differ for no reason.
+2. **Rotation needs a defined quantity.** Plastic nodes have no intrinsic
+   orientation; look_at is meaningful only toward a real relationship (e.g.
+   the strongest connection). Otherwise it is decoration, and decoration
+   must be labelled.
+3. **Animation is a diff, not a loop.** Tweens only in response to a change
+   event with a real before/after state. An idle AION that spins or pulses
+   would be the misleading representation the Gym design warns against.
+
+**Practical notes:** the event stream drives transforms, not polling — every
+visible movement traces to a ledger entry and replay reproduces the motion;
+raw values are one click away next to the visual (a large-looking node shows
+its number); **prototype on the small fixed 20-relationship world first**
+(replay of one recorded run) to check the mapping reads correctly before
+scaling.
+
+**Where it lands:** the Gym page (transplant build step 3) and the
+new-section spec's AionModel + 3D visualization layer. The 2D connection
+graph already obeys what applies to it: the layout method is labelled on
+screen (fixed deterministic hash-circle layout), colour follows provenance
+when events carry it (unrecognized values render grey, fallback fast/slow is
+labelled), and nothing animates except on real deltas. The shell's page-slide
+tweens are interface chrome, not organism-state animation — they carry no
+state meaning and animate nothing about AION.
+
 ## 9. Laws
 
 1. Display integrity (no faked learning; explicit labelling of any

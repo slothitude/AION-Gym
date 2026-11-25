@@ -76,7 +76,7 @@ const PAYLOAD_FIELDS: Dictionary = {
 		"optional": [
 			"from_node", "to_node", "delta_u_fast", "delta_theta",
 			"u_fast_before", "u_fast_after", "theta_before", "theta_after",
-			"cause_episode_id",
+			"cause_episode_id", "provenance",
 		],
 	},
 	TYPE_MEMORY_CONSOLIDATED: {

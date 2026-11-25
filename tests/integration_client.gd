@@ -44,20 +44,22 @@ func _initialize() -> void:
 
 
 func _build() -> void:
-	bus = EventBusScript.new()
-	bus.name = "EventBus"
-	root.add_child(bus)
-	cache = StateCacheScript.new()
-	cache.name = "StateCache"
-	root.add_child(cache)
-	cache.attach(bus)
-	mgr = ConnectionManagerScript.new()
-	mgr.name = "ConnectionManager"
-	root.add_child(mgr)
-	mgr.attach_bus(bus)
+	# Autoload singletons DO load in --script mode and own the canonical node
+	# names. The gym resolves /root/EventBus + /root/ConnectionManager itself,
+	# so the driver binds to THE SAME instances the dashboard uses — creating
+	# duplicates here wires the graph/curves/lambda to a bus nothing publishes
+	# to (the exact integration bug the first gate run exposed).
 	gym = GymScript.new()
 	gym.name = "Gym"
 	root.add_child(gym)
+	bus = gym._bus if gym._bus != null else EventBusScript.new()
+	mgr = gym._manager if gym._manager != null else ConnectionManagerScript.new()
+	cache = root.get_node_or_null(NodePath("StateCache"))
+	if cache == null:
+		cache = StateCacheScript.new()
+		cache.name = "StateCache"
+		root.add_child(cache)
+	cache.attach(bus)
 	graph = ConnectionGraphScript.new()
 	graph.name = "GateGraph"
 	root.add_child(graph)
@@ -70,8 +72,6 @@ func _build() -> void:
 		received.append(ev))
 	bus.state_snapshot.connect(func(payload: Dictionary) -> void:
 		snap_box[0] = payload)
-	mgr.connection_state_changed.connect(func(s: int, d: String) -> void:
-		print("[driver] connection state %d: %s" % [s, d]))
 
 
 func _run() -> void:

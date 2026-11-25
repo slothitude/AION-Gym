@@ -7,6 +7,10 @@ extends Node2D
 ## Self-Correction vs steps) arrive when the bridge defines exam events —
 ## until then this panel shows real connection activity or an honest empty
 ## note. No decorative numbers (display integrity law).
+##
+## Honesty rule "animation is a diff, not a loop": this plot only redraws on
+## real event deltas — it never animates on a timer, and an idle AION shows
+## a still line, because still is the truth.
 
 const MAX_POINTS := 240
 const PLOT_SIZE := Vector2(420, 140)

@@ -208,6 +208,10 @@ func _run_schema_tests() -> void:
 		_envelope(Schema.TYPE_NAV_ACTION, {"decision_id": "d", "custom_bonus": true}), true)
 	check(bool(extra_field.get("ok", false)), "unknown payload fields never rejected (additive-only)")
 
+	var prov: Dictionary = Schema.parse_object(_envelope(Schema.TYPE_CONNECTION_UPDATED,
+		{"connection_id": "c-9", "provenance": "CONSOLIDATED"}))
+	check(bool(prov.get("ok", false)), "connection.updated carries provenance (canon colour field)")
+
 
 func _run_bus_tests() -> void:
 	print("[event bus]")
