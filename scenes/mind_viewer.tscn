@@ -1,0 +1,20 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/visualization/connection_graph.gd" id="1_graph"]
+
+[node name="MindViewer" type="Control"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Header" type="Label" parent="."]
+offset_left = 12.0
+offset_top = 8.0
+offset_right = 900.0
+offset_bottom = 32.0
+text = "Mind viewer — live plastic graph (connection.updated events; fast/slow layers, γ-gates arrive with the bridge)"
+
+[node name="Graph" type="Node2D" parent="."]
+position = Vector2(560, 360)

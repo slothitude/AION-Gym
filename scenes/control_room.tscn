@@ -1,0 +1,23 @@
+[gd_scene load_steps=1 format=3]
+
+[node name="ControlRoom" type="Control"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Header" type="Label" parent="."]
+offset_left = 12.0
+offset_top = 8.0
+offset_right = 900.0
+offset_bottom = 32.0
+text = "Control room — chat, teach, correct, pause/resume, goals, approvals (every action routes through the runtime's authority layer)"
+
+[node name="Body" type="Label" parent="."]
+offset_left = 12.0
+offset_top = 44.0
+offset_right = 620.0
+offset_bottom = 240.0
+text = "Awaiting the bridge. Permitted actions: teach, ask, correct, pause, resume, set_goal, approve_request, deny_request — the owner has the largest permitted menu, still not a bypass."
+autowrap_mode = 3

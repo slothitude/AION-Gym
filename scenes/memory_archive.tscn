@@ -1,0 +1,23 @@
+[gd_scene load_steps=1 format=3]
+
+[node name="MemoryArchive" type="Control"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Header" type="Label" parent="."]
+offset_left = 12.0
+offset_top = 8.0
+offset_right = 900.0
+offset_bottom = 32.0
+text = "Memory archive & dream laboratory — experiences, corrections, provenance, dreams (M3/M4)"
+
+[node name="Body" type="Label" parent="."]
+offset_left = 12.0
+offset_top = 44.0
+offset_right = 620.0
+offset_bottom = 220.0
+text = "Awaiting the bridge. PLASTIC / CONSOLIDATED / RETRIEVED provenance is never conflated; dream cycles show what was imagined, what reality tested, what was retained."
+autowrap_mode = 3

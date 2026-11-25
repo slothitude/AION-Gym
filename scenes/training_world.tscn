@@ -1,0 +1,23 @@
+[gd_scene load_steps=1 format=3]
+
+[node name="TrainingWorld" type="Control"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Header" type="Label" parent="."]
+offset_left = 12.0
+offset_top = 8.0
+offset_right = 900.0
+offset_bottom = 32.0
+text = "Training worlds — tasks, objects, questions, attempts (M2: task builder + attempt viewer)"
+
+[node name="Body" type="Label" parent="."]
+offset_left = 12.0
+offset_top = 44.0
+offset_right = 620.0
+offset_bottom = 220.0
+text = "Awaiting the bridge. Batteries from aion/worlds/ plug in directly — each attempt arrives as an event with provenance; watch the attempts, not just the answers."
+autowrap_mode = 3
